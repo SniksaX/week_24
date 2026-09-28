@@ -1,0 +1,42 @@
+{
+  "name": "auth",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "trap 'kill 0' INT TERM; bun run dev:api & bun run dev:web & wait",
+    "dev:api": "bun --hot src/api/Server.ts",
+    "dev:web": "vite --config src/web/vite.config.ts",
+    "build": "bun build src/api/Server.ts --outdir dist --target bun --packages external && tsc -b src/web && vite build --config src/web/vite.config.ts",
+    "start": "bun dist/Server.js",
+    "lint": "eslint -c src/web/eslint.config.js src/web"
+  },
+  "dependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.19.0",
+    "bcrypt": "^6.0.0",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@eslint/js": "^10.0.1",
+    "@rolldown/plugin-babel": "^0.2.3",
+    "@types/babel__core": "^7.20.5",
+    "@types/bun": "latest",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.6",
+    "globals": "^17.12.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.69.0",
+    "vite": "^8.3.0"
+  }
+}

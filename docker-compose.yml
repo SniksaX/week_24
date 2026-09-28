@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    environment:
+      PORT: ${PORT:-3000}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}
+      SQLITE_PATH: /app/data/week_24.sqlite
+    volumes:
+      - sqlite:/app/data
+
+volumes:
+  sqlite:

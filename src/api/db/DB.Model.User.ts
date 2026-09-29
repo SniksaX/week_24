@@ -4,8 +4,8 @@ type UserRow = {
   id: number;
   email: string;
   password: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 class User {
@@ -21,7 +21,7 @@ class User {
     password: string,
     createdAt: Date,
     updatedAt: Date,
-) {
+  ) {
     this.id = id;
     this.email = email;
     this.password = password;
@@ -29,61 +29,53 @@ class User {
     this.updatedAt = updatedAt;
   }
 
-  create(): User {
+  async create(): Promise<User> {
     const now = new Date();
     this.createdAt = now;
     this.updatedAt = now;
 
-    const info = db
-      .query(
-        `INSERT INTO users (email, password, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?)`,
-      )
-      .run(this.email, this.password, now.toISOString(), now.toISOString());
+    const result = await db`
+      INSERT INTO users (email, password, \`createdAt\`, \`updatedAt\`)
+      VALUES (${this.email}, ${this.password}, ${now}, ${now})
+    `;
 
-    this.id = Number(info.lastInsertRowid);
+    this.id = Number(result.lastInsertRowid);
     return this;
   }
 
-  update(): void {
+  async update(): Promise<void> {
     this.updatedAt = new Date();
-    db.query(
-      `UPDATE users SET email = ?, password = ?, updatedAt = ? WHERE id = ?`,
-    ).run(this.email, this.password, this.updatedAt.toISOString(), this.id);
+    await db`
+      UPDATE users
+      SET email = ${this.email}, password = ${this.password}, \`updatedAt\` = ${this.updatedAt}
+      WHERE id = ${this.id}
+    `;
   }
 
-  delete(): void {
-    db.query(`DELETE FROM users WHERE id = ?`).run(this.id);
+  async delete(): Promise<void> {
+    await db`DELETE FROM users WHERE id = ${this.id}`;
   }
 
-  static findOne(email: string): User | null {
-    const row = db
-      .query<UserRow, [string]>(`SELECT * FROM users WHERE email = ?`)
-      .get(email);
-
-    if (!row) return null;
-    return new User(
-      row.id,
-      row.email,
-      row.password,
-      new Date(row.createdAt),
-      new Date(row.updatedAt),
-    );
+  static async findOne(email: string): Promise<User | null> {
+    const rows = await db`SELECT * FROM users WHERE email = ${email}`;
+    return rowToUser(rows[0]);
   }
 
-  static findById(id: number): User | null {
-    const row = db
-      .query<UserRow, [number]>(`SELECT * FROM users WHERE id = ?`)
-      .get(id);
-    if (!row) return null;
-    return new User(
-      row.id,
-      row.email,
-      row.password,
-      new Date(row.createdAt),
-      new Date(row.updatedAt),
-    );
+  static async findById(id: number): Promise<User | null> {
+    const rows = await db`SELECT * FROM users WHERE id = ${id}`;
+    return rowToUser(rows[0]);
   }
+}
+
+function rowToUser(row: UserRow | undefined): User | null {
+  if (!row) return null;
+  return new User(
+    row.id,
+    row.email,
+    row.password,
+    new Date(row.createdAt),
+    new Date(row.updatedAt),
+  );
 }
 
 export default User;

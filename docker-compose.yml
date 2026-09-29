@@ -1,15 +1,35 @@
 services:
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: week_24
+      MARIADB_USER: week_24
+      MARIADB_PASSWORD: week_24
+      MARIADB_ROOT_PASSWORD: root
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - mariadb:/var/lib/mysql
+
   app:
     build: .
+    depends_on:
+      mariadb:
+        condition: service_healthy
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
     environment:
       PORT: ${PORT:-3000}
       SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}
-      SQLITE_PATH: /app/data/week_24.sqlite
-    volumes:
-      - sqlite:/app/data
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USER: week_24
+      DB_PASSWORD: week_24
+      DB_NAME: week_24
 
 volumes:
-  sqlite:
+  mariadb:

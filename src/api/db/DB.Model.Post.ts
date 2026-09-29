@@ -4,7 +4,7 @@ type PostRow = {
   id: number;
   userId: number;
   body: string;
-  createdAt: string;
+  createdAt: Date | string;
 };
 
 class Post {
@@ -20,30 +20,27 @@ class Post {
     this.createdAt = createdAt;
   }
 
-  create(): Post {
+  async create(): Promise<Post> {
     const now = new Date();
     this.createdAt = now;
-    const info = db
-      .query(`INSERT INTO posts (userId, body, createdAt) VALUES (?, ?, ?)`)
-      .run(this.userId, this.body, now.toISOString());
-    this.id = Number(info.lastInsertRowid);
+    const result = await db`
+      INSERT INTO posts (userId, body, \`createdAt\`)
+      VALUES (${this.userId}, ${this.body}, ${now})
+    `;
+    this.id = Number(result.lastInsertRowid);
     return this;
   }
 
-  static listByUser(userId: number): Post[] {
-    const rows = db
-      .query<PostRow, [number]>(
-        `SELECT * FROM posts WHERE userId = ? ORDER BY id DESC`,
-      )
-      .all(userId);
-    return rows.map((row) => new Post(row.id, row.userId, row.body, new Date(row.createdAt)));
+  static async listByUser(userId: number): Promise<Post[]> {
+    const rows = await db`
+      SELECT * FROM posts WHERE userId = ${userId} ORDER BY id DESC
+    `;
+    return rows.map((row: PostRow) => new Post(row.id, row.userId, row.body, new Date(row.createdAt)));
   }
 
-  static deleteForUser(id: number, userId: number): boolean {
-    const info = db
-      .query(`DELETE FROM posts WHERE id = ? AND userId = ?`)
-      .run(id, userId);
-    return info.changes > 0;
+  static async deleteForUser(id: number, userId: number): Promise<boolean> {
+    const result = await db`DELETE FROM posts WHERE id = ${id} AND userId = ${userId}`;
+    return result.affectedRows > 0;
   }
 }
 

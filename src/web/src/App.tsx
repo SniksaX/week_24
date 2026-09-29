@@ -1,24 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { api } from './api.ts'
+import { login, logout, me, register, type User } from './auth.ts'
 
-type User = { id: number; email: string }
 type Post = { id: number; body: string; createdAt: string }
 type Page = 'login' | 'register'
-
-async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  })
-  const data = (await response.json().catch(() => ({}))) as T & { message?: string }
-  if (!response.ok) {
-    throw new Error(data.message ?? 'Request failed')
-  }
-  return data
-}
 
 function go(path: string) {
   window.history.pushState({}, '', path)
@@ -45,7 +30,7 @@ function AuthPage() {
   const [page, setPage] = useState<Page>('login')
 
   useEffect(() => {
-    api<{ user: User }>('/api/auth/me')
+    me()
       .then(() => go('/user'))
       .catch(() => {})
   }, [])
@@ -54,7 +39,7 @@ function AuthPage() {
     <AuthForm
       title="Login"
       submitLabel="Login"
-      path="/api/auth/login"
+      submit={login}
       switchLabel="Need an account? Register"
       onSwitch={() => setPage('register')}
     />
@@ -62,7 +47,7 @@ function AuthPage() {
     <AuthForm
       title="Register"
       submitLabel="Register"
-      path="/api/auth/register"
+      submit={register}
       switchLabel="Have an account? Login"
       onSwitch={() => setPage('login')}
     />
@@ -72,13 +57,13 @@ function AuthPage() {
 function AuthForm({
   title,
   submitLabel,
-  path,
+  submit,
   switchLabel,
   onSwitch,
 }: {
   title: string
   submitLabel: string
-  path: string
+  submit: (email: string, password: string) => Promise<unknown>
   switchLabel: string
   onSwitch: () => void
 }) {
@@ -90,10 +75,7 @@ function AuthForm({
     event.preventDefault()
     setError('')
     try {
-      await api<{ user: User }>(path, {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      })
+      await submit(email, password)
       go('/user')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Request failed')
@@ -133,7 +115,7 @@ function UserPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    api<{ user: User }>('/api/auth/me')
+    me()
       .then((data) => setUser(data.user))
       .catch(() => go('/'))
       .finally(() => setReady(true))
@@ -183,8 +165,8 @@ function Posts({ user }: { user: User }) {
     }
   }
 
-  async function logout() {
-    await api('/api/auth/logout', { method: 'POST' })
+  async function onLogout() {
+    await logout()
     go('/')
   }
 
@@ -192,7 +174,7 @@ function Posts({ user }: { user: User }) {
     <main>
       <h1>Posts</h1>
       <p>{user.email}</p>
-      <button type="button" onClick={logout}>
+      <button type="button" onClick={onLogout}>
         Logout
       </button>
       <form onSubmit={createPost}>

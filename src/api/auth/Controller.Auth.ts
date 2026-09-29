@@ -1,9 +1,10 @@
 import type { Request, Response } from 'express';
+import { clearAuthCookie, setAuthCookie } from './Cookie.Auth';
 import AuthService from './Service.Auth';
 
 class AuthController {
-  me(req: Request, res: Response) {
-    res.json({ user: req.session.user });
+  me(req: Request, res: Response): void {
+    res.json({ user: req.user });
   }
 
   async login(req: Request, res: Response) {
@@ -14,9 +15,9 @@ class AuthController {
     }
 
     try {
-      const user = await AuthService.login(email, password);
-      req.session.user = user;
-      res.status(200).json({ user });
+      const { token, email: userEmail } = await AuthService.login(email, password);
+      setAuthCookie(res, token);
+      res.json({ user: { email: userEmail } });
     } catch {
       res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -30,9 +31,9 @@ class AuthController {
     }
 
     try {
-      const user = await AuthService.register(email, password);
-      req.session.user = user;
-      res.status(201).json({ message: 'User created successfully', user });
+      const { token, email: userEmail } = await AuthService.register(email, password);
+      setAuthCookie(res, token);
+      res.status(201).json({ user: { email: userEmail } });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';
       const status = message === 'User already exists' ? 409 : 400;
@@ -40,15 +41,9 @@ class AuthController {
     }
   }
 
-  logout(req: Request, res: Response) {
-    req.session.destroy((error) => {
-      if (error) {
-        res.status(500).json({ message: 'Logout failed' });
-        return;
-      }
-      res.clearCookie('connect.sid');
-      res.status(200).json({ message: 'Logged out successfully' });
-    });
+  logout(_req: Request, res: Response) {
+    clearAuthCookie(res);
+    res.status(200).json({ message: 'Logged out successfully' });
   }
 }
 

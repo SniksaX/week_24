@@ -12,20 +12,6 @@ const router = Router();
 const app = express();
 
 app.use(express.json());
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET ?? 'dev-session-secret',
-    resave: false,
-    saveUninitialized: false,
-    name: 'connect.sid',
-    cookie: {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60,
-    },
-  }),
-);
 app.use(authInterceptor);
 
 app.get('/health', (_req, res) => {

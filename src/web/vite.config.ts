@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
       port: webPort,
       proxy: {
         '/api': `http://localhost:${apiPort}`,
+        '/health': `http://localhost:${apiPort}`,
       },
     },
   }

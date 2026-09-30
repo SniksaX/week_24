@@ -1,44 +1,38 @@
 import { db } from './DB.Init';
-
-type UserRow = {
-  id: number;
-  email: string;
-  password: string;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-};
+import type { UserRow } from '../types/Types';
 
 class User {
   id: number;
   email: string;
-  password: string;
+  password: string | null;
   createdAt: Date;
   updatedAt: Date;
+  googleId: string | null;
 
   constructor(
     id: number,
     email: string,
-    password: string,
+    password: string | null,
     createdAt: Date,
     updatedAt: Date,
+    googleId: string | null = null,
   ) {
     this.id = id;
     this.email = email;
     this.password = password;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.googleId = googleId;
   }
 
   async create(): Promise<User> {
     const now = new Date();
     this.createdAt = now;
     this.updatedAt = now;
-
     const result = await db`
-      INSERT INTO users (email, password, \`createdAt\`, \`updatedAt\`)
-      VALUES (${this.email}, ${this.password}, ${now}, ${now})
+      INSERT INTO users (email, password, googleId, \`createdAt\`, \`updatedAt\`)
+      VALUES (${this.email}, ${this.password}, ${this.googleId}, ${now}, ${now})
     `;
-
     this.id = Number(result.lastInsertRowid);
     return this;
   }
@@ -47,7 +41,8 @@ class User {
     this.updatedAt = new Date();
     await db`
       UPDATE users
-      SET email = ${this.email}, password = ${this.password}, \`updatedAt\` = ${this.updatedAt}
+      SET email = ${this.email}, password = ${this.password}, googleId = ${this.googleId},
+          \`updatedAt\` = ${this.updatedAt}
       WHERE id = ${this.id}
     `;
   }
@@ -65,6 +60,11 @@ class User {
     const rows = await db`SELECT * FROM users WHERE id = ${id}`;
     return rowToUser(rows[0]);
   }
+
+  static async findByGoogleId(googleId: string): Promise<User | null> {
+    const rows = await db`SELECT * FROM users WHERE googleId = ${googleId}`;
+    return rowToUser(rows[0]);
+  }
 }
 
 function rowToUser(row: UserRow | undefined): User | null {
@@ -75,6 +75,7 @@ function rowToUser(row: UserRow | undefined): User | null {
     row.password,
     new Date(row.createdAt),
     new Date(row.updatedAt),
+    row.googleId,
   );
 }
 

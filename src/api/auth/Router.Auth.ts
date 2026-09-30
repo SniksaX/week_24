@@ -8,5 +8,7 @@ router.get('/me', authInterceptor, AuthController.me);
 router.post('/login', authInterceptor, AuthController.login);
 router.post('/register', authInterceptor, AuthController.register);
 router.post('/logout', authInterceptor, AuthController.logout);
+router.get('/google', AuthController.googleStart);
+router.get('/google/callback', AuthController.googleCallback);
 
 export default router;

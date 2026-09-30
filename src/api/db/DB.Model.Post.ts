@@ -1,11 +1,5 @@
 import { db } from './DB.Init';
-
-type PostRow = {
-  id: number;
-  userId: number;
-  body: string;
-  createdAt: Date | string;
-};
+import type { PostRow } from '../types/Types';
 
 class Post {
   id: number;

@@ -1,12 +1,10 @@
-import express from 'express';
-import session from 'express-session';
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import AuthRouter from './auth/Router.Auth';
 import PostRouter from './posts/Router.Post';
 import { authInterceptor } from './middleware/Middleware.Auth';
-import './types/Types.Session';
+import { PORT } from './Config';
 
 const router = Router();
 const app = express();
@@ -45,10 +43,8 @@ app.use((req, res, next) => {
   res.sendFile(index);
 });
 
-const port = Number(process.env.PORT ?? 3000);
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
 export default app;

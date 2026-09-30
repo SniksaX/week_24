@@ -6,6 +6,8 @@ services:
       MARIADB_USER: week_24
       MARIADB_PASSWORD: week_24
       MARIADB_ROOT_PASSWORD: root
+    ports:
+      - "127.0.0.1:${DB_PORT:-3307}:3306"
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
@@ -23,13 +25,17 @@ services:
       - "${PORT:-3000}:${PORT:-3000}"
     environment:
       PORT: ${PORT:-3000}
-      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}
       DB_HOST: mariadb
       DB_PORT: 3306
       DB_USER: week_24
       DB_PASSWORD: week_24
       DB_NAME: week_24
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: http://localhost:${PORT:-3000}/api/auth/google/callback
+      APP_URL: http://localhost:${PORT:-3000}/
 
 volumes:
   mariadb:

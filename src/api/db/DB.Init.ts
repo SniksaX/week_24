@@ -1,12 +1,9 @@
 import { SQL } from 'bun';
+import { DB } from '../Config';
 
 export const db = new SQL({
   adapter: 'mariadb',
-  hostname: process.env.DB_HOST ?? '127.0.0.1',
-  port: Number(process.env.DB_PORT ?? 3306),
-  username: process.env.DB_USER ?? '',
-  password: process.env.DB_PASSWORD ?? '',
-  database: process.env.DB_NAME ?? 'test_week_24',
+  ...DB,
   allowPublicKeyRetrieval: true,
 });
 
@@ -14,11 +11,15 @@ await db`
   CREATE TABLE IF NOT EXISTS users (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NULL,
+    googleId VARCHAR(255) NULL UNIQUE,
     \`createdAt\` DATETIME(3) NOT NULL,
     \`updatedAt\` DATETIME(3) NOT NULL
   )
 `;
+
+await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS googleId VARCHAR(255) NULL UNIQUE`;
+await db`ALTER TABLE users MODIFY password VARCHAR(255) NULL`;
 
 await db`
   CREATE TABLE IF NOT EXISTS posts (

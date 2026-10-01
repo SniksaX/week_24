@@ -10,5 +10,7 @@ router.post('/register', authInterceptor, AuthController.register);
 router.post('/logout', authInterceptor, AuthController.logout);
 router.get('/google', AuthController.googleStart);
 router.get('/google/callback', AuthController.googleCallback);
+router.get('/github', AuthController.githubStart);
+router.get('/github/callback', AuthController.githubCallback);
 
 export default router;

@@ -26,3 +26,7 @@ export function logout() {
 export function googleLogin(): void {
   window.location.href = '/api/auth/google'
 }
+
+export function githubLogin(): void {
+  window.location.href = '/api/auth/github'
+}

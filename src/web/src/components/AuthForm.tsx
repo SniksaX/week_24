@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from 'react'
-import { login, register } from '../lib/auth.ts'
+import { login, register, githubLogin } from '../lib/auth.ts'
 import { ApiError } from '../types.ts'
 import GoogleButton from './GoogleButton.tsx'
  
@@ -71,6 +71,7 @@ export default function AuthForm({
       <button type="button" onClick={onSwitch} disabled={pending}>
         {switchLabel}
       </button>
+      <button type="button" onClick={githubLogin}>Continue with GitHub</button>
     </main>
   )
 }

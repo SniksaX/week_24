@@ -35,6 +35,13 @@ class AuthService {
     }
     return { token: await Token.sign(user.email), email: user.email };
   }
+
+  async loginWithGithub(email: string): Promise<AuthResult> {
+    const user =
+      (await User.findOne(email)) ??
+      (await new User(0, email, null, new Date(), new Date()).create());
+    return { token: await Token.sign(user.email), email: user.email };
+  }
 }
 
 export default new AuthService();

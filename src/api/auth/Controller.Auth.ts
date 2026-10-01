@@ -8,6 +8,7 @@ import {
   setOAuthCookie,
 } from './Cookie.Auth';
 import { createAuthRequest, exchangeCode, isGoogleEnabled } from './Google.Auth';
+import { createGithubAuthRequest, exchangeGithubCode, isGithubEnabled } from './Github.Auth';
 import AuthService from './Service.Auth';
 
 class AuthController {
@@ -88,6 +89,36 @@ class AuthController {
       res.redirect(APP_URL);
     } catch {
       res.redirect(`${APP_URL}?error=google_auth`);
+    }
+  }
+
+  githubStart(_req: Request, res: Response): void {
+    if (!isGithubEnabled()) {
+      res.status(503).json({ message: 'GitHub auth is not configured' });
+      return;
+    }
+    const { url, state } = createGithubAuthRequest();
+    setOAuthCookie(res, state);
+    res.redirect(url);
+  }
+
+  async githubCallback(req: Request, res: Response): Promise<void> {
+    const { code, state } = req.query;
+    const expected = readOAuthCookie(req);
+    clearOAuthCookie(res);
+
+    if (typeof code !== 'string' || typeof state !== 'string' || !expected || state !== expected) {
+      res.redirect(`${APP_URL}?error=github_auth`);
+      return;
+    }
+
+    try {
+      const email = await exchangeGithubCode(code);
+      const { token } = await AuthService.loginWithGithub(email);
+      setAuthCookie(res, token);
+      res.redirect(APP_URL);
+    } catch {
+      res.redirect(`${APP_URL}?error=github_auth`);
     }
   }
 }

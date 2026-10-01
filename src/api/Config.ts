@@ -1,5 +1,5 @@
 import { createRemoteJWKSet } from 'jose';
-import type { CookieConfig, DbConfig, GoogleConfig } from './types/Types';
+import type { CookieConfig, DbConfig, GithubConfig, GoogleConfig } from './types/Types';
 
 function required(name: string): string {
   const value = process.env[name];
@@ -11,6 +11,14 @@ function loadGoogle(): GoogleConfig | null {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  if (!clientId || !clientSecret || !redirectUri) return null;
+  return { clientId, clientSecret, redirectUri };
+}
+
+function loadGithub(): GithubConfig | null {
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+  const redirectUri = process.env.GITHUB_REDIRECT_URI;
   if (!clientId || !clientSecret || !redirectUri) return null;
   return { clientId, clientSecret, redirectUri };
 }
@@ -40,7 +48,7 @@ export const AUTH_COOKIE: CookieConfig = {
 export const OAUTH_COOKIE: CookieConfig = {
   name: 'g_oauth',
   maxAge: 1000 * 60 * 10,
-  options: { httpOnly: true, sameSite: 'lax', path: '/api/auth/google' },
+  options: { httpOnly: true, sameSite: 'lax', path: '/api/auth' },
 };
 
 export const GOOGLE: GoogleConfig | null = loadGoogle();
@@ -50,6 +58,12 @@ export const GOOGLE_SCOPE = 'openid email';
 export const GOOGLE_ISSUERS: string[] = ['https://accounts.google.com', 'accounts.google.com'];
 export const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 
+export const GITHUB: GithubConfig | null = loadGithub();
+export const GITHUB_AUTH_URL = 'https://github.com/login/oauth/authorize';
+export const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
+export const GITHUB_EMAILS_URL = 'https://api.github.com/user/emails';
+export const GITHUB_SCOPE = 'user:email';
+
 export const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   'GET /health',
   'POST /api/auth/login',
@@ -57,4 +71,6 @@ export const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   'POST /api/auth/logout',
   'GET /api/auth/google',
   'GET /api/auth/google/callback',
+  'GET /api/auth/github',
+  'GET /api/auth/github/callback',
 ]);

@@ -42,6 +42,14 @@ export type GoogleAuthRequest = { url: string; state: string; verifier: string }
 
 export type GoogleTokenResponse = { id_token?: unknown };
 
+export type GithubConfig = GoogleConfig;
+
+export type GithubAuthRequest = { url: string; state: string };
+
+export type GithubTokenResponse = { access_token?: unknown };
+
+export type GithubEmail = { email: string; primary: boolean; verified: boolean };
+
 export type AuthResult = { token: string; email: string };
 
 export type AuthUser = { email: string };

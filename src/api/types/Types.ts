@@ -36,26 +36,20 @@ export type GoogleConfig = {
   redirectUri: string;
 };
 
-export type GoogleProfile = { sub: string; email: string };
-
-export type GoogleAuthRequest = { url: string; state: string; verifier: string };
-
-export type GoogleTokenResponse = { id_token?: unknown };
-
 export type GithubConfig = GoogleConfig;
 
-export type GithubAuthRequest = { url: string; state: string };
+export type GoogleProfile = { sub: string; email: string };
 
-export type GithubTokenResponse = { access_token?: unknown };
+export type GithubEmail = { value: string; primary?: boolean; verified?: boolean };
 
-export type GithubEmail = { email: string; primary: boolean; verified: boolean };
+export type OAuthIdentity = { id: string; email: string };
 
 export type AuthResult = { token: string; email: string };
 
-export type AuthUser = { email: string };
-
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: AuthUser;
+declare global {
+  namespace Express {
+    interface User {
+      email: string;
+    }
   }
 }

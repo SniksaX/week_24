@@ -1,17 +1,65 @@
-import type { Request, Response } from 'express';
-import { APP_URL } from '../Config';
-import {
-  clearAuthCookie,
-  clearOAuthCookie,
-  readOAuthCookie,
-  setAuthCookie,
-  setOAuthCookie,
-} from './Cookie.Auth';
-import { createAuthRequest, exchangeCode, isGoogleEnabled } from './Google.Auth';
-import { createGithubAuthRequest, exchangeGithubCode, isGithubEnabled } from './Github.Auth';
+import type { Request, RequestHandler, Response } from 'express';
+import { APP_URL, GITHUB, GOOGLE } from '../Config';
+import type { OAuthIdentity } from '../types/Types';
+import { clearAuthCookie, setAuthCookie } from './Cookie.Auth';
+import passport from './Passport.Auth';
 import AuthService from './Service.Auth';
 
+type Provider = 'google' | 'github';
+
+const ENABLED: Record<Provider, boolean> = { google: GOOGLE !== null, github: GITHUB !== null };
+
+const START_OPTIONS = {
+  google: { session: false, prompt: 'select_account' },
+  github: { session: false },
+} as const;
+
+function start(provider: Provider): RequestHandler {
+  return (req, res, next) => {
+    if (!ENABLED[provider]) {
+      res.status(503).json({ message: `${provider} auth is not configured` });
+      return;
+    }
+    passport.authenticate(provider, START_OPTIONS[provider])(req, res, next);
+  };
+}
+
+function callback(provider: Provider): RequestHandler {
+  const failure = `${APP_URL}?error=${provider}_auth`;
+  return (req, res, next) => {
+    if (!ENABLED[provider]) {
+      res.redirect(failure);
+      return;
+    }
+    passport.authenticate(
+      provider,
+      { session: false },
+      async (error: unknown, identity: OAuthIdentity | false) => {
+        if (error || !identity) {
+          res.redirect(failure);
+          return;
+        }
+        try {
+          const { token } =
+            provider === 'google'
+              ? await AuthService.loginWithGoogle({ sub: identity.id, email: identity.email })
+              : await AuthService.loginWithGithub(identity.email);
+          setAuthCookie(res, token);
+          res.redirect(APP_URL);
+        } catch {
+          res.redirect(failure);
+        }
+      },
+    )(req, res, next);
+  };
+}
+
 class AuthController {
+  googleStart = start('google');
+  googleCallback = callback('google');
+  githubStart = start('github');
+  githubCallback = callback('github');
+
   me(req: Request, res: Response): void {
     res.json({ user: req.user });
   }
@@ -53,73 +101,6 @@ class AuthController {
   logout(_req: Request, res: Response): void {
     clearAuthCookie(res);
     res.status(200).json({ message: 'Logged out successfully' });
-  }
-
-  googleStart(_req: Request, res: Response): void {
-    if (!isGoogleEnabled()) {
-      res.status(503).json({ message: 'Google auth is not configured' });
-      return;
-    }
-    const { url, state, verifier } = createAuthRequest();
-    setOAuthCookie(res, `${state}.${verifier}`);
-    res.redirect(url);
-  }
-
-  async googleCallback(req: Request, res: Response): Promise<void> {
-    const { code, state } = req.query;
-    const stored = readOAuthCookie(req);
-    clearOAuthCookie(res);
-
-    const [expected, verifier] = stored?.split('.') ?? [];
-    if (
-      typeof code !== 'string' ||
-      typeof state !== 'string' ||
-      !expected ||
-      !verifier ||
-      state !== expected
-    ) {
-      res.redirect(`${APP_URL}?error=google_auth`);
-      return;
-    }
-
-    try {
-      const profile = await exchangeCode(code, verifier);
-      const { token } = await AuthService.loginWithGoogle(profile);
-      setAuthCookie(res, token);
-      res.redirect(APP_URL);
-    } catch {
-      res.redirect(`${APP_URL}?error=google_auth`);
-    }
-  }
-
-  githubStart(_req: Request, res: Response): void {
-    if (!isGithubEnabled()) {
-      res.status(503).json({ message: 'GitHub auth is not configured' });
-      return;
-    }
-    const { url, state } = createGithubAuthRequest();
-    setOAuthCookie(res, state);
-    res.redirect(url);
-  }
-
-  async githubCallback(req: Request, res: Response): Promise<void> {
-    const { code, state } = req.query;
-    const expected = readOAuthCookie(req);
-    clearOAuthCookie(res);
-
-    if (typeof code !== 'string' || typeof state !== 'string' || !expected || state !== expected) {
-      res.redirect(`${APP_URL}?error=github_auth`);
-      return;
-    }
-
-    try {
-      const email = await exchangeGithubCode(code);
-      const { token } = await AuthService.loginWithGithub(email);
-      setAuthCookie(res, token);
-      res.redirect(APP_URL);
-    } catch {
-      res.redirect(`${APP_URL}?error=github_auth`);
-    }
   }
 }
 

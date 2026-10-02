@@ -1,4 +1,4 @@
-import { createRemoteJWKSet } from 'jose';
+import type { SessionOptions } from 'express-session';
 import type { CookieConfig, DbConfig, GithubConfig, GoogleConfig } from './types/Types';
 
 function required(name: string): string {
@@ -7,18 +7,10 @@ function required(name: string): string {
   return value;
 }
 
-function loadGoogle(): GoogleConfig | null {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-  if (!clientId || !clientSecret || !redirectUri) return null;
-  return { clientId, clientSecret, redirectUri };
-}
-
-function loadGithub(): GithubConfig | null {
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-  const redirectUri = process.env.GITHUB_REDIRECT_URI;
+function loadOAuth(prefix: 'GOOGLE' | 'GITHUB'): GoogleConfig | null {
+  const clientId = process.env[`${prefix}_CLIENT_ID`];
+  const clientSecret = process.env[`${prefix}_CLIENT_SECRET`];
+  const redirectUri = process.env[`${prefix}_REDIRECT_URI`];
   if (!clientId || !clientSecret || !redirectUri) return null;
   return { clientId, clientSecret, redirectUri };
 }
@@ -45,24 +37,16 @@ export const AUTH_COOKIE: CookieConfig = {
   options: { httpOnly: true, sameSite: 'lax', path: '/' },
 };
 
-export const OAUTH_COOKIE: CookieConfig = {
-  name: 'g_oauth',
-  maxAge: 1000 * 60 * 10,
-  options: { httpOnly: true, sameSite: 'lax', path: '/api/auth' },
+export const OAUTH_SESSION: SessionOptions = {
+  name: 'oauth',
+  secret: required('JWT_SECRET'),
+  resave: false,
+  saveUninitialized: false,
+  cookie: { httpOnly: true, sameSite: 'lax', path: '/api/auth', maxAge: 1000 * 60 * 10 },
 };
 
-export const GOOGLE: GoogleConfig | null = loadGoogle();
-export const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-export const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-export const GOOGLE_SCOPE = 'openid email';
-export const GOOGLE_ISSUERS: string[] = ['https://accounts.google.com', 'accounts.google.com'];
-export const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
-
-export const GITHUB: GithubConfig | null = loadGithub();
-export const GITHUB_AUTH_URL = 'https://github.com/login/oauth/authorize';
-export const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
-export const GITHUB_EMAILS_URL = 'https://api.github.com/user/emails';
-export const GITHUB_SCOPE = 'user:email';
+export const GOOGLE: GoogleConfig | null = loadOAuth('GOOGLE');
+export const GITHUB: GithubConfig | null = loadOAuth('GITHUB');
 
 export const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   'GET /health',

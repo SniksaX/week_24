@@ -3,11 +3,19 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import AuthRouter from './auth/Router.Auth';
 import PostRouter from './posts/Router.Post';
+import PaymentRouter from './payments/Router.Payment';
+import PaymentController from './payments/Controller.Payment';
 import { authInterceptor } from './middleware/Middleware.Auth';
 import { PORT } from './Config';
 
 const router = Router();
 const app = express();
+
+app.post(
+  '/api/stripe/webhook',
+  express.raw({ type: 'application/json' }),
+  PaymentController.webhook,
+);
 
 app.use(express.json());
 app.use(authInterceptor);
@@ -27,6 +35,7 @@ router.get('/info', (_req, res) => {
 app.use('/api', router);
 app.use('/api/auth', AuthRouter);
 app.use('/api/posts', PostRouter);
+app.use('/api/payments', PaymentRouter);
 
 const webDir = path.join(import.meta.dir, 'web');
 app.use(express.static(webDir));

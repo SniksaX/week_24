@@ -8,6 +8,7 @@ class User {
   createdAt: Date;
   updatedAt: Date;
   googleId: string | null;
+  hasPaid: boolean;
 
   constructor(
     id: number,
@@ -16,6 +17,7 @@ class User {
     createdAt: Date,
     updatedAt: Date,
     googleId: string | null = null,
+    hasPaid = false,
   ) {
     this.id = id;
     this.email = email;
@@ -23,6 +25,7 @@ class User {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.googleId = googleId;
+    this.hasPaid = hasPaid;
   }
 
   async create(): Promise<User> {
@@ -51,6 +54,10 @@ class User {
     await db`DELETE FROM users WHERE id = ${this.id}`;
   }
 
+  static async markPaid(id: number): Promise<void> {
+    await db`UPDATE users SET hasPaid = TRUE, \`updatedAt\` = ${new Date()} WHERE id = ${id}`;
+  }
+
   static async findOne(email: string): Promise<User | null> {
     const rows = await db`SELECT * FROM users WHERE email = ${email}`;
     return rowToUser(rows[0]);
@@ -76,6 +83,7 @@ function rowToUser(row: UserRow | undefined): User | null {
     new Date(row.createdAt),
     new Date(row.updatedAt),
     row.googleId,
+    Boolean(row.hasPaid),
   );
 }
 

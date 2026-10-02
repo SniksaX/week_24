@@ -1,13 +1,14 @@
 import type { CookieOptions } from 'express';
 
 export type UserRow = {
-  id: number;
-  email: string;
-  password: string | null;
-  googleId: string | null;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-};
+    id: number;
+    email: string;
+    password: string | null;
+    googleId: string | null;
+    hasPaid: number | boolean;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+  };
 
 export type PostRow = {
   id: number;
@@ -35,6 +36,7 @@ export type GoogleConfig = {
   clientSecret: string;
   redirectUri: string;
 };
+
 
 export type GithubConfig = GoogleConfig;
 

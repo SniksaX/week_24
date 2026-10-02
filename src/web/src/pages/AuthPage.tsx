@@ -12,6 +12,14 @@ function googleAuthError(): string {
     : ''
 }
 
+function userDestination(): string {
+  const payment = new URLSearchParams(window.location.search).get('payment')
+  if (payment === 'success' || payment === 'cancelled') {
+    return `/user?payment=${payment}`
+  }
+  return '/user'
+}
+
 export default function AuthPage() {
   const [mode, setMode] = useState<Mode>('login')
   const [ready, setReady] = useState(false)
@@ -26,7 +34,7 @@ export default function AuthPage() {
     let ignore = false
     me()
       .then(() => {
-        if (!ignore) navigate('/user')
+        if (!ignore) navigate(userDestination())
       })
       .catch((err: unknown) => {
         if (ignore) return
@@ -51,7 +59,7 @@ export default function AuthPage() {
     <AuthForm
       mode={mode}
       initialError={googleError}
-      onSuccess={() => navigate('/user')}
+      onSuccess={() => navigate(userDestination())}
       onSwitch={() => setMode(mode === 'login' ? 'register' : 'login')}
     />
   )

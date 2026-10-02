@@ -21,7 +21,8 @@
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "stripe": "^23.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

@@ -1,10 +1,24 @@
 import { useEffect, useState } from 'react'
-import PostForm from '../components/PostForm.tsx'
-import PostList from '../components/PostList.tsx'
 import { api } from '../lib/api.ts'
 import { logout, me } from '../lib/auth.ts'
+import { paymentStatus, startCheckout } from '../lib/payments.ts'
 import { navigate } from '../lib/router.ts'
 import { ApiError, type Post, type User } from '../types.ts'
+import PostForm from '../components/PostForm.tsx'
+import PostList from '../components/PostList.tsx'
+
+type PaymentReturn = 'success' | 'cancelled'
+
+let paymentHandoff: PaymentReturn | null = null
+
+function readPaymentReturn(): PaymentReturn | null {
+  const value = new URLSearchParams(window.location.search).get('payment')
+  if (value === 'success' || value === 'cancelled') {
+    paymentHandoff = value
+    return value
+  }
+  return paymentHandoff
+}
 
 export default function UserPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -12,6 +26,13 @@ export default function UserPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [postsReady, setPostsReady] = useState(false)
   const [error, setError] = useState('')
+  const [paymentNotice] = useState(readPaymentReturn)
+  const [hasPaid, setHasPaid] = useState<boolean | null>(null)
+  const [confirming, setConfirming] = useState(paymentNotice === 'success')
+  const [timedOut, setTimedOut] = useState(false)
+  const [cancelled, setCancelled] = useState(paymentNotice === 'cancelled')
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
 
   useEffect(() => {
     let ignore = false
@@ -38,6 +59,48 @@ export default function UserPage() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    if (paymentNotice) window.history.replaceState({}, '', window.location.pathname)
+
+    let ignore = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let attempts = 0
+
+    async function loadStatus() {
+      try {
+        const data = await paymentStatus()
+        if (ignore) return
+        attempts += 1
+        if (paymentNotice === 'success' && !data.hasPaid && attempts < 10) {
+          timer = setTimeout(() => {
+            void loadStatus()
+          }, 1000)
+          return
+        }
+        setHasPaid(data.hasPaid)
+        setConfirming(false)
+        if (paymentNotice === 'success') {
+          paymentHandoff = null
+          if (!data.hasPaid) setTimedOut(true)
+        }
+      } catch (err: unknown) {
+        if (ignore) return
+        if (err instanceof ApiError && err.status === 401) {
+          navigate('/')
+          return
+        }
+        setPayError(errorMessage(err))
+        setConfirming(false)
+      }
+    }
+
+    void loadStatus()
+    return () => {
+      ignore = true
+      if (timer !== undefined) clearTimeout(timer)
+    }
+  }, [paymentNotice])
 
   useEffect(() => {
     if (!user) return
@@ -85,7 +148,27 @@ export default function UserPage() {
       if (err instanceof ApiError && err.status === 401) {
         navigate('/')
       }
+      if (err instanceof ApiError && err.status === 402) {
+        setHasPaid(false)
+        setTimedOut(false)
+        return
+      }
       throw err
+    }
+  }
+
+  async function onPay() {
+    setPayError('')
+    setPaying(true)
+    try {
+      await startCheckout()
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 401) {
+        navigate('/')
+        return
+      }
+      setPayError(errorMessage(err))
+      setPaying(false)
     }
   }
 
@@ -112,7 +195,32 @@ export default function UserPage() {
         Logout
       </button>
       {error && <p>{error}</p>}
-      <PostForm onCreate={createPost} />
+      {cancelled && (
+        <p>
+          Payment cancelled{' '}
+          <button
+            type="button"
+            onClick={() => {
+              paymentHandoff = null
+              setCancelled(false)
+            }}
+          >
+            Dismiss
+          </button>
+        </p>
+      )}
+      {confirming && <p>Confirming payment...</p>}
+      {timedOut && <p>Payment received, refresh in a moment</p>}
+      {hasPaid === false && !confirming && !timedOut && (
+        <>
+          <p>Posting requires a one-time $999 payment</p>
+          <button type="button" onClick={() => void onPay()} disabled={paying}>
+            {paying ? 'Redirecting...' : 'Pay $999'}
+          </button>
+        </>
+      )}
+      {payError && <p>{payError}</p>}
+      {hasPaid === true && <PostForm onCreate={createPost} />}
       {postsReady ? <PostList posts={posts} onRemove={removePost} /> : <p>Loading...</p>}
     </main>
   )

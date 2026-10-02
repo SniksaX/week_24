@@ -48,6 +48,14 @@ export const OAUTH_SESSION: SessionOptions = {
 export const GOOGLE: GoogleConfig | null = loadOAuth('GOOGLE');
 export const GITHUB: GithubConfig | null = loadOAuth('GITHUB');
 
+export const STRIPE_SECRET_KEY = required('STRIPE_SECRET_KEY');
+export const STRIPE_WEBHOOK_SECRET = required('STRIPE_WEBHOOK_SECRET');
+export const POST_ACCESS_PRICE = {
+  currency: 'usd',
+  unitAmount: 99900,
+  name: 'Posting access',
+} as const;
+
 export const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   'GET /health',
   'POST /api/auth/login',
@@ -57,4 +65,5 @@ export const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   'GET /api/auth/google/callback',
   'GET /api/auth/github',
   'GET /api/auth/github/callback',
+  'POST /api/stripe/webhook',
 ]);

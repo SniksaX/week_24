@@ -19,17 +19,21 @@ class PostController {
   }
 
   async create(req: Request, res: Response) {
-    const id = await userId(req);
+    const user = req.user ? await User.findOne(req.user.email) : null;
     const body = String(req.body?.body ?? '').trim();
-    if (id === undefined) {
+    if (!user) {
       res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    if (!user.hasPaid) {
+      res.status(402).json({ message: 'Payment required' });
       return;
     }
     if (!body) {
       res.status(400).json({ message: 'Post body is required' });
       return;
     }
-    const post = await new Post(0, id, body, new Date()).create();
+    const post = await new Post(0, user.id, body, new Date()).create();
     res.status(201).json({ post });
   }
 

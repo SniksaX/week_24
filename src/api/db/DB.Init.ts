@@ -13,12 +13,14 @@ await db`
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NULL,
     googleId VARCHAR(255) NULL UNIQUE,
+    hasPaid BOOLEAN NOT NULL DEFAULT FALSE,
     \`createdAt\` DATETIME(3) NOT NULL,
     \`updatedAt\` DATETIME(3) NOT NULL
   )
 `;
 
 await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS googleId VARCHAR(255) NULL UNIQUE`;
+await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS hasPaid BOOLEAN NOT NULL DEFAULT FALSE`;
 await db`ALTER TABLE users MODIFY password VARCHAR(255) NULL`;
 
 await db`

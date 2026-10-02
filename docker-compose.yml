@@ -35,10 +35,22 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: http://localhost:${PORT:-3000}/api/auth/google/callback
-      APP_URL: http://localhost:${PORT:-3000}/
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       GITHUB_REDIRECT_URI: http://localhost:${PORT:-3000}/api/auth/github/callback
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:?STRIPE_SECRET_KEY is required}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?STRIPE_WEBHOOK_SECRET is required}
+      APP_URL: http://localhost:${PORT:-3000}/
+
+  stripe:
+    image: stripe/stripe-cli
+    depends_on:
+      - app
+    command: >
+      listen
+      --api-key ${STRIPE_SECRET_KEY}
+      --events checkout.session.completed
+      --forward-to app:${PORT:-3000}/api/stripe/webhook
 
 volumes:
   mariadb:
